@@ -17,7 +17,7 @@ Linux has no standard location or API for service certificates. `certbot` uses `
 ## Goals
 
 - Single certificate registry for Linux, compliant with the Linux Filesystem Hierarchy Standard
-- CA-agnostic: works with Let's Encrypt, internal CAs, self-signed, PKCS#12, anything
+- CA-agnostic: works with Let's Encrypt, DigiCert, GlobalSign, Sectigo, ZeroSSL, Google Trust Services, AWS Private CA, internal CAs, self-signed, PKCS#12, anything with an ACME or REST API
 - Tool-agnostic: import certs from certbot, acme.sh, openssl, or manually
 - Automatic renewal via pluggable CA backends
 - Service notification on renewal (systemd, D-Bus, custom hooks)
