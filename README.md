@@ -51,6 +51,11 @@ Planned:
 ```
 certstored (daemon, optional — future)
     │
+    ├── Certificate proxy: brokers requests to local or remote CA backends
+    │       clients request certs from certstored; certstored handles CA selection
+    │       clients do not need to know or care which CA is used
+    ├── Signed delivery: certstored signs all cert deliveries with its own key
+    │       clients verify the signature before accepting — prevents MITM substitution
     ├── D-Bus API for local queries
     ├── Network certificate delivery (Kerberos, mTLS)
     ├── Pull model (default): clients request certs from the daemon
@@ -72,10 +77,7 @@ certstored (daemon, optional — future)
 
 `/etc/pki/` is the preferred base. `/etc/ssl/` is supported but not preferred.
 
-No other paths (e.g. `/etc/letsencrypt/`, `~/.acme.sh/`) are natively recognized. If you use a CA tool that writes elsewhere, you have two options:
-
-1. Configure `libcertstore` to import from that path on renewal.
-2. Bind-mount or symlink the foreign directory into `/etc/pki/certstore/` — `libcertstore` can manage this automatically if configured to do so.
+No other paths (e.g. `/etc/letsencrypt/`, `~/.acme.sh/`) are natively recognized. If you use a CA tool that writes elsewhere, configure `libcertstore` with the foreign path and it will bind-mount it into `/etc/pki/certstore/` automatically. Bind mounts are used instead of symlinks to prevent accidental deletion or redirection.
 
 Default store layout:
 
@@ -151,11 +153,22 @@ Each registration creates:
 - `/etc/systemd/system/certstore-renew-<cn>.timer`
 - `/etc/systemd/system/certstore-renew-<cn>.service`
 
-The timer fires daily and checks whether the cert is within the renewal window. If so, it renews. Renewal takes under 10 minutes. The previous cert remains active until the new one is in place.
+The timer fires once at the renewal date. If renewal fails, it retries with exponential backoff -- it does not attempt renewal every day for the entire window. The previous cert remains active until the new one is in place. Renewal takes under 10 minutes.
 
 Renewal hooks fire after successful renewal and can restart services, reload configs, or run arbitrary scripts.
 
 > **Note:** Setting `--renew-before 1d` is supported but not recommended for production. If renewal fails for any reason, you have one day to fix it before the cert expires.
+
+### Certificate Overlap with Internal CAs
+
+Public CAs (Let's Encrypt, DigiCert, etc.) issue certificates with `notBefore` set to the time of issuance. Pre-dating is not supported.
+
+Internal CAs support setting `notBefore` to a date in the past or future. When using an internal CA backend, `libcertstore` can request the new cert with `notBefore` set 30 days before the old cert expires -- providing a clean overlap window with no gap in validity. This eliminates any risk of a service seeing an expired cert during the switchover.
+
+```bash
+# Enable notBefore overlap for internal CA (ignored for public CAs)
+certctl add --cn ldap.example.com --ca internal --overlap 30d
+```
 
 ---
 
@@ -200,8 +213,8 @@ No cert store design survives a root compromise. The correct response is host re
 Requires Rust 1.75+.
 
 ```bash
-git clone https://github.com/yourname/libcertstore-certctl
-cd libcertstore-certctl
+git clone https://github.com/georgemarselis/libcertstore
+cd libcertstore
 cargo build --release
 ```
 
