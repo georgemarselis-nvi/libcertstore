@@ -250,7 +250,12 @@ cargo install --path .
 
 ## License
 
-MIT or Apache-2.0, at your option.
+`libcertstore` is dual-licensed:
+
+- **Apache-2.0** (default) — for commercial use, proprietary integration, and open source projects that prefer permissive licensing. Includes explicit patent protection.
+- **GPL-3.0** — for projects that require copyleft. Available on the `gpl` branch.
+
+Choose whichever license fits your use case. Contributions are accepted under both.
 
 ---
 
