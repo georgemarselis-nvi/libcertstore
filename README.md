@@ -172,7 +172,48 @@ certctl add --cn ldap.example.com --ca internal --overlap 30d
 
 ---
 
-## Security
+## Library and API
+
+`libcertstore` is designed to be consumed by other services, not just used from the command line.
+
+### Rust Crate
+
+`libcertstore` is a native Rust crate. Add it to your `Cargo.toml` and query the store directly:
+
+```rust
+use libcertstore::Store;
+
+let store = Store::open()?;
+let cert = store.get("ldap.example.com")?;
+println!("{}", cert.path());
+```
+
+### C FFI
+
+A C-compatible FFI layer is provided so any language with a C FFI can link against `libcertstore` -- Python, Go, C, C++, and others.
+
+```c
+#include <certstore.h>
+
+certstore_t *store = certstore_open();
+certstore_cert_t *cert = certstore_get(store, "ldap.example.com");
+printf("%s\n", certstore_cert_path(cert));
+```
+
+### IPC / Socket API (with certstored)
+
+When `certstored` is running, services can query it over a local Unix socket without linking against the library at all. The protocol is simple and language-agnostic.
+
+```bash
+# Query certstored for a cert path
+certctl query --cn ldap.example.com
+```
+
+Bindings for common languages and service managers are planned.
+
+---
+
+
 
 Certificates are public — tampering with them is not the primary threat. Private keys are. `libcertstore` secures keys through permissions, MAC policy, and audit logging.
 
