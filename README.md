@@ -36,7 +36,7 @@ libcertstore (Rust library)
     ├── Renewal engine (systemd timer integration)
     └── Notification hooks (systemd, D-Bus, shell)
 
-certctl (CLI — included)
+certctl (CLI - included)
     │
     ├── certctl list
     ├── certctl add
@@ -49,13 +49,13 @@ certctl (CLI — included)
 Planned:
 
 ```
-certstored (daemon, optional — future)
+certstored (daemon, optional - future)
     │
     ├── Certificate proxy: brokers requests to local or remote CA backends
     │       clients request certs from certstored; certstored handles CA selection
     │       clients do not need to know or care which CA is used
     ├── Signed delivery: certstored signs all cert deliveries with its own key
-    │       clients verify the signature before accepting — prevents MITM substitution
+    │       clients verify the signature before accepting - prevents MITM substitution
     ├── D-Bus API for local queries
     ├── Network certificate delivery (Kerberos, mTLS)
     ├── Pull model (default): clients request certs from the daemon
@@ -174,7 +174,7 @@ certctl add --cn ldap.example.com --ca internal --overlap 30d
 
 ## For Package Maintainers and Service Authors
 
-Every package manager, every service, and every distro currently ships its own certificate handling code. `dnf`, `apt`, language runtimes, and individual services all reinvent the same wheel — fetching, installing, and trusting certificates in subtly different ways.
+Every package manager, every service, and every distro currently ships its own certificate handling code. `dnf`, `apt`, language runtimes, and individual services all reinvent the same wheel - fetching, installing, and trusting certificates in subtly different ways.
 
 `libcertstore` is the answer to that. Instead of writing cert handling code in your package or service, call `libcertstore`. One integration, one store, one place to audit.
 
@@ -182,7 +182,7 @@ If your service needs a certificate:
 
 1. Link against `libcertstore` or query `certstored` over the socket API
 2. Ask for the cert by CN
-3. Get back the path or PEM — done
+3. Get back the path or PEM - done
 
 No custom install scripts. No hardcoded paths. No reinventing renewal logic. The system handles it.
 
@@ -231,13 +231,13 @@ Bindings for common languages and service managers are planned.
 
 
 
-Certificates are public — tampering with them is not the primary threat. Private keys are. `libcertstore` secures keys through permissions, MAC policy, and audit logging.
+Certificates are public - tampering with them is not the primary threat. Private keys are. `libcertstore` secures keys through permissions, MAC policy, and audit logging.
 
 ### File Permissions
 
-- `keys/` — `0700`, root only
-- Individual key files — `0600`, root only
-- `certs/` and `chains/` — `0755` / `0644`
+- `keys/` - `0700`, root only
+- Individual key files - `0600`, root only
+- `certs/` and `chains/` - `0755` / `0644`
 
 ### Audit Logging with auditd
 
@@ -311,8 +311,8 @@ cargo install --path .
 
 `libcertstore` is dual-licensed:
 
-- **Apache-2.0** (default) — for commercial use, proprietary integration, and open source projects that prefer liberal licensing. Includes explicit patent protection.
-- **GPL-3.0** — for projects that require copyleft. Available on the `gpl` branch.
+- **Apache-2.0** (default) - for commercial use, proprietary integration, and open source projects that prefer liberal licensing. Includes explicit patent protection.
+- **GPL-3.0** - for projects that require copyleft. Available on the `gpl` branch.
 
 Choose whichever license fits your use case. Contributions are accepted under both and ported to both.
 
