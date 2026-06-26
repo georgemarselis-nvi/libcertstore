@@ -172,7 +172,23 @@ certctl add --cn ldap.example.com --ca internal --overlap 30d
 
 ---
 
-## Library and API
+## For Package Maintainers and Service Authors
+
+Every package manager, every service, and every distro currently ships its own certificate handling code. `dnf`, `apt`, language runtimes, and individual services all reinvent the same wheel — fetching, installing, and trusting certificates in subtly different ways.
+
+`libcertstore` is the answer to that. Instead of writing cert handling code in your package or service, call `libcertstore`. One integration, one store, one place to audit.
+
+If your service needs a certificate:
+
+1. Link against `libcertstore` or query `certstored` over the socket API
+2. Ask for the cert by CN
+3. Get back the path or PEM — done
+
+No custom install scripts. No hardcoded paths. No reinventing renewal logic. The system handles it.
+
+---
+
+
 
 `libcertstore` is designed to be consumed by other services, not just used from the command line.
 
