@@ -196,7 +196,7 @@ This logs every read, write, execute, and attribute change, tagged `certstore_ke
 ausearch -k certstore_keys
 ```
 
-You get: who, what process, what UID, what syscall, what time. Forward to syslog or a SIEM for alerting.
+You get: who, what process, what UID, what syscall, and what time. Forward to syslog or a SIEM for alerting.
 
 ### SELinux / AppArmor
 
@@ -209,6 +209,8 @@ No cert store design survives a root compromise. The correct response is host re
 ---
 
 
+
+## Building
 
 Requires Rust 1.75+.
 
@@ -252,10 +254,10 @@ cargo install --path .
 
 `libcertstore` is dual-licensed:
 
-- **Apache-2.0** (default) — for commercial use, proprietary integration, and open source projects that prefer permissive licensing. Includes explicit patent protection.
+- **Apache-2.0** (default) — for commercial use, proprietary integration, and open source projects that prefer liberal licensing. Includes explicit patent protection.
 - **GPL-3.0** — for projects that require copyleft. Available on the `gpl` branch.
 
-Choose whichever license fits your use case. Contributions are accepted under both.
+Choose whichever license fits your use case. Contributions are accepted under both and ported to both.
 
 ---
 
