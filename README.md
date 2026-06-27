@@ -407,7 +407,28 @@ cargo install --path .
 
 ---
 
-## Boot Integration
+## Failure Scenarios
+
+`libcertstore` is designed to fail loudly and safely. The following scenarios are handled explicitly.
+
+| Scenario | Behavior |
+|----------|----------|
+| SQLite write interrupted mid-transaction | SQLite rolls back automatically. Store remains consistent. |
+| `certctl` killed mid-renewal | Old cert remains active. Systemd timer retries on next fire. |
+| `certstored` crashes | Clients fall back to reading the store directly via the library. |
+| Host loses power during `certctl scan` | Scan re-runs on next boot via `certstore-init.service`. |
+| SQLite file deleted | `certstored` detects missing file, logs `CRIT` to syslog, refuses all requests and exits with non-zero code. Systemd does **not** restart it automatically (`Restart=no`). Admin must investigate, run `certctl scan` to recreate and repopulate the database, then restart `certstored` manually. |
+| SQLite file corrupted | `certstored` runs `PRAGMA integrity_check` on startup. On failure, same behavior as missing file. |
+| Keys directory deleted | Keys are unrecoverable without backup. `certstored` detects missing keys on startup and marks affected certs invalid. All affected certs must be re-issued. |
+| Certs directory deleted, SQLite intact | `certctl scan` detects orphaned store entries and tombstones them. Certs must be re-issued. |
+| Filesystem full during renewal | New cert written partially. SQLite transaction not committed. Old cert remains active. Timer retries. |
+| Clock skew | Cert may appear expired when valid or valid when expired. NTP is a hard runtime dependency. `certstored` warns loudly on startup if the system clock is not synchronized. |
+
+`certctl scan` recreates the SQLite database from the filesystem if it is missing or unreadable. It is the recovery tool of first resort.
+
+---
+
+
 
 `libcertstore` ships a systemd oneshot unit `certstore-init.service` that runs `certctl scan` at boot, before any services that depend on certificates start. No daemon required.
 
