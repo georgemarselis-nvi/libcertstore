@@ -43,6 +43,7 @@ certctl (CLI - included)
     ├── certctl remove
     ├── certctl revoke
     ├── certctl renew
+    ├── certctl rotate
     ├── certctl status [--check-revocation]
     ├── certctl scan
     └── certctl notify
@@ -148,6 +149,10 @@ certctl remove --cn ldap.example.com
 
 # Purge all expired certificates from the store
 certctl remove --purge-expired
+
+# Rotate key pair and request a fresh certificate from the CA
+# Old key and cert are tombstoned
+certctl rotate --cn ldap.example.com
 
 # Revoke a certificate with the issuing CA and remove it from the local store
 certctl revoke --cn ldap.example.com
@@ -339,7 +344,27 @@ No cert store design survives a root compromise. The correct response is host re
 
 
 
-## Building
+## Syslog and Event Integration
+
+`libcertstore` logs all operations to syslog with a dedicated identifier (`certstore`). Example message templates are shipped with the package so sysadmins can wire them into rsyslog, syslog-ng or a SIEM without reverse engineering log output.
+
+Example messages:
+
+```
+certstore[1234]: INFO  cert=ldap.example.com action=renewed ca=letsencrypt expiry=2026-09-27
+certstore[1234]: INFO  cert=ldap.example.com action=rotated old_fingerprint=aa:bb:cc new_fingerprint=dd:ee:ff
+certstore[1234]: WARN  cert=ldap.example.com action=expiry_imminent days_remaining=7
+certstore[1234]: ERROR cert=ldap.example.com action=renewal_failed ca=letsencrypt reason="DNS-01 challenge failed"
+certstore[1234]: ERROR cert=ldap.example.com action=expired
+certstore[1234]: INFO  cert=ldap.example.com action=revoked ca=letsencrypt
+certstore[1234]: WARN  cert=ldap.example.com action=ocsp_revoked
+```
+
+rsyslog and syslog-ng filter examples are provided under `contrib/syslog/` in the repository.
+
+---
+
+
 
 Requires Rust 1.75+.
 
