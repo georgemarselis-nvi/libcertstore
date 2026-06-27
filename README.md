@@ -143,7 +143,7 @@ certctl renew --cn ldap.example.com
 
 # Register a post-renewal notification hook
 # Also registers the service as a consumer of the certificate
-certctl notify --cn ldap.example.com --exec "systemctl restart slapd"
+certctl notify --cn ldap.example.com --exec "systemctl restart slapd" --description "LDAP Directory Service"
 
 # Show status, expiry and registered consumers for a certificate
 certctl status --cn ldap.example.com
@@ -364,7 +364,7 @@ certctl status --cn ldap.example.com
 # cn:        ldap.example.com
 # expiry:    2026-09-27
 # status:    valid
-# consumers: slapd, nginx, postgresql
+# consumers: slapd (LDAP Directory Service), nginx, postgresql
 ```
 
 On renewal, all registered consumers are notified automatically. Compliance auditors get a full report of who uses each cert without requiring per-service certificate issuance.
