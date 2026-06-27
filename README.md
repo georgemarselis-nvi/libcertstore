@@ -38,7 +38,7 @@ libcertstore (Rust library)
 
 certctl (CLI - included)
     │
-    ├── certctl list [--ca] [--end-entity]
+    ├── certctl list [--ca] [--end-entity] [--expired]
     ├── certctl add
     ├── certctl remove
     ├── certctl revoke
@@ -125,6 +125,9 @@ certctl list --ca
 # List end-entity certificates only
 certctl list --end-entity
 
+# List expired certificates (tombstoned -- visible for audit but not usable)
+certctl list --expired
+
 # Add an existing or pre-issued certificate to the store (including airgapped hosts via removable media)
 certctl add --cert /path/to/cert.pem --key /path/to/key.pem --chain /path/to/chain.pem
 
@@ -142,6 +145,9 @@ certctl notify --cn ldap.example.com --exec "systemctl restart slapd"
 
 # Remove a certificate from the local store only
 certctl remove --cn ldap.example.com
+
+# Purge all expired certificates from the store
+certctl remove --purge-expired
 
 # Revoke a certificate with the issuing CA and remove it from the local store
 certctl revoke --cn ldap.example.com
