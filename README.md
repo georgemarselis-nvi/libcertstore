@@ -92,8 +92,8 @@ Default store layout:
 /etc/pki/certstore/
     certs/          # PEM certificates, named by CN or fingerprint
     keys/           # Private keys, mode 0600
-    chains/         # Full chains
-    meta/           # SQLite index (expiry, CA, renewal config, hooks)
+    chains/         # Full chains, deduplicated by fingerprint and shared across certs from the same CA
+    meta/           # SQLite index (expiry, CA, renewal config, hooks, chain references)
 ```
 
 The base path is configurable via `/etc/certstore/certstore.conf` or `$CERTSTORE_BASE`.
@@ -213,6 +213,8 @@ certctl add --cn ldap.example.com --ca internal --overlap 30d
 ### Automatic Certificate Discovery
 
 `certctl scan` walks the system and finds existing certificates regardless of where they were placed -- by certbot, acme.sh, manual installation or any other tool. Found certs are registered into the store without re-issuance. No assumption is made that a host needs a new cert; discovery comes first.
+
+On multihomed hosts, `certctl scan` also detects all FQDNs with DNS entries on the host's interfaces and requests certs for any that don't already have one.
 
 Certs are automatically categorized on import by reading the `basicConstraints: CA:TRUE` X.509 extension -- no manual classification needed. CA certs and end-entity certs are stored and tracked separately.
 
