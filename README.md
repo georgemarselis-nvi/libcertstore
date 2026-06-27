@@ -301,11 +301,6 @@ Cross-service read access (e.g. a Prometheus exporter reading cert metadata for 
 
 When `certstored` is running, services can query it over a local Unix socket without linking against the library at all. The protocol is simple and language-agnostic.
 
-```bash
-# Query certstored for a cert path
-certctl query --cn ldap.example.com
-```
-
 Bindings for common languages and service managers are planned.
 
 ---
