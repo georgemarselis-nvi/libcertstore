@@ -149,6 +149,7 @@ certctl list ldap.example.com
 certctl renew ldap.example.com
 
 # Register post-renewal restart hooks and label the consumers
+# --description overrides the label; falls back to the systemd unit Description= field; falls back to service name
 certctl notify --cn ldap.example.com --restart slapd,nginx,postgresql --description "LDAP Directory Service"
 
 # Remove a certificate from the local store only
