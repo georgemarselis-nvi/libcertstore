@@ -423,8 +423,19 @@ cargo install --path .
 | Certs directory deleted, SQLite intact | `certctl scan` detects orphaned store entries and tombstones them. Certs must be re-issued. |
 | Filesystem full during renewal | New cert written partially. SQLite transaction not committed. Old cert remains active. Timer retries. |
 | Clock skew | Cert may appear expired when valid or valid when expired. NTP is a hard runtime dependency. `certstored` warns loudly on startup if the system clock is not synchronized. |
+| Concurrent `certctl` processes | Two simultaneous renewals for the same CN are prevented via SQLite advisory lock per CN. |
+| CA unreachable during renewal | ACME endpoint down or DNS-01 challenge fails. Exponential backoff retries. If the cert expires before renewal succeeds, that is an operational failure -- size `--renew-before` accordingly. |
+| Renewal succeeds but service restart fails | New cert is valid. Service is down. `certstored` logs the failed restart separately so it is distinguishable from a cert failure. |
+| SELinux denial | Service is blocked from reading its cert by SELinux policy. Looks like a missing cert from the service's perspective. `certstored` cannot detect this. Run `ausearch -m avc` as the first debugging step. |
+| Disk I/O errors | Corrupted sector under `/etc/pki/certstore/`. SQLite integrity check catches database corruption. Corrupted PEM files are caught by `certctl scan --verify`, which reads and parses every cert and key on disk proactively. |
+| Symlink attack | A cert or key file replaced with a symlink. The library opens key files with `O_NOFOLLOW` and refuses to follow symlinks under `keys/`. |
+| inotify limit exhaustion | `certstored` file watches hit the kernel `fs.inotify.max_user_watches` limit on systems with many certs. `certstored` checks the limit at startup and warns if headroom is insufficient. |
+| SQLite poisoning | Root-level edit of the SQLite database to falsify cert status, expiry or consumer list. auditd detects the write. `certctl scan --verify` detects mismatches between the database and the filesystem. When `certstored` is in use, it cross-references its own issuance records against the local SQLite on every client connection and refuses to serve anything that does not match. |
+| Timezone change | System timezone changes while daemon is running. All internal timestamps and renewal timers use UTC. Timezone changes have no effect. |
 
 `certctl scan` recreates the SQLite database from the filesystem if it is missing or unreadable. It is the recovery tool of first resort.
+
+If the filesystem itself is compromised or unrecoverable, the host is compromised. Rebuild from scratch, re-issue all certs and treat any previously issued private keys as compromised.
 
 ---
 
