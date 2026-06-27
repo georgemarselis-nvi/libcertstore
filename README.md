@@ -184,6 +184,8 @@ certctl add --cn ldap.example.com --ca internal --overlap 30d
 
 `certctl scan` walks the system and finds existing certificates regardless of where they were placed -- by certbot, acme.sh, manual installation or any other tool. Found certs are registered into the store without re-issuance. No assumption is made that a host needs a new cert; discovery comes first.
 
+Certs are automatically categorized on import by reading the `basicConstraints: CA:TRUE` X.509 extension -- no manual classification needed. CA certs and end-entity certs are stored and tracked separately.
+
 ```bash
 certctl scan
 certctl scan --path /etc/letsencrypt/live/
@@ -196,13 +198,14 @@ certctl scan --path /etc/letsencrypt/live/
 Debian preseed example:
 
 ```
-d-i preseed/late_command string certctl request --cn $(hostname --fqdn) --ca letsencrypt
+d-i preseed/late_command string certctl scan && certctl request --cn $(hostname --fqdn) --ca letsencrypt
 ```
 
 Kickstart example:
 
 ```
 %post
+certctl scan
 certctl request --cn $(hostname --fqdn) --ca letsencrypt
 %end
 ```
