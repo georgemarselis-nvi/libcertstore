@@ -409,6 +409,29 @@ cargo install --path .
 
 ---
 
+## Boot Integration
+
+`libcertstore` ships a systemd oneshot unit `certstore-init.service` that runs `certctl scan` at boot, before any services that depend on certificates start. No daemon required.
+
+```ini
+[Unit]
+Description=libcertstore store initialization
+Before=slapd.service nginx.service postgresql.service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certctl scan
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Add your cert-dependent services to the `Before=` line. `certstored` is not required -- this works on any systemd system.
+
+---
+
 ## Roadmap
 
 | Version | Milestone |
