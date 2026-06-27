@@ -72,7 +72,7 @@ certstored (daemon, optional - future)
 
 | Path | Primary use |
 |------|-------------|
-| `/etc/pki/` | Preferred. Red Hat, Fedora, and FHS-compliant systems. |
+| `/etc/pki/` | Preferred. Red Hat convention, widely adopted. `libcertstore` advocates for FHS standardization of this path. |
 | `/etc/ssl/` | Supported. Debian, Ubuntu, and derivatives. |
 
 `/etc/pki/` is the preferred base. `/etc/ssl/` is supported but not preferred.
