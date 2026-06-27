@@ -415,7 +415,7 @@ cargo install --path .
 |----------|----------|
 | SQLite write interrupted mid-transaction | SQLite rolls back automatically. Store remains consistent. |
 | `certctl` killed mid-renewal | Old cert remains active. Systemd timer retries on next fire. |
-| `certstored` crashes | Clients fall back to reading the store directly via the library. |
+| `certstored` crashes | Clients can fall back to reading the store directly via the library or wait for the sysadmin to restart and retry. |
 | Host loses power during `certctl scan` | Scan re-runs on next boot via `certstore-init.service`. |
 | SQLite file deleted | `certstored` detects missing file, logs `CRIT` to syslog, refuses all requests and exits with non-zero code. Systemd does **not** restart it automatically (`Restart=no`). Admin must investigate, run `certctl scan` to recreate and repopulate the database, then restart `certstored` manually. |
 | SQLite file corrupted | `certstored` runs `PRAGMA integrity_check` on startup. On failure, same behavior as missing file. |
