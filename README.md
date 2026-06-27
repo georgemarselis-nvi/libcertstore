@@ -142,7 +142,11 @@ certctl status --check-revocation
 certctl renew --cn ldap.example.com
 
 # Register a post-renewal notification hook
+# Also registers the service as a consumer of the certificate
 certctl notify --cn ldap.example.com --exec "systemctl restart slapd"
+
+# Show status, expiry and registered consumers for a certificate
+certctl status --cn ldap.example.com
 
 # Remove a certificate from the local store only
 certctl remove --cn ldap.example.com
@@ -276,10 +280,17 @@ A C-compatible FFI layer is provided so any language with a C FFI can link again
 ```c
 #include <certstore.h>
 
+/* Open the full store (requires root or certstore group membership) */
 certstore_t *store = certstore_open();
 certstore_cert_t *cert = certstore_get(store, "ldap.example.com");
 printf("%s\n", certstore_cert_path(cert));
+
+/* Open a service-scoped view -- only returns certs the calling service is allowed to see */
+certstore_t *store = certstore_open_for("slapd");
+certstore_cert_t *cert = certstore_get(store, "ldap.example.com");
 ```
+
+Service-scoped access is enforced by the library using the caller's UID/GID and SELinux label. A service cannot enumerate or access certs it has not been granted access to.
 
 ### IPC / Socket API (with certstored)
 
@@ -344,7 +355,23 @@ No cert store design survives a root compromise. The correct response is host re
 
 
 
-## Syslog and Event Integration
+### Certificate Consumers
+
+The store tracks which services are registered against each certificate. One cert can serve multiple services with no duplication of key material -- each service gets the path via `certstore_get()` and is listed as a consumer in the store metadata.
+
+```bash
+certctl status --cn ldap.example.com
+# cn:        ldap.example.com
+# expiry:    2026-09-27
+# status:    valid
+# consumers: slapd, nginx, postgresql
+```
+
+On renewal, all registered consumers are notified automatically. Compliance auditors get a full report of who uses each cert without requiring per-service certificate issuance.
+
+---
+
+
 
 `libcertstore` logs all operations to syslog with a dedicated identifier (`certstore`). Example message templates are shipped with the package so sysadmins can wire them into rsyslog, syslog-ng or a SIEM without reverse engineering log output.
 
