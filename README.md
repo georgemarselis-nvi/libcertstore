@@ -75,7 +75,7 @@ certstored (daemon, optional - future)
 
 ## Filesystem Policy
 
-`libcertstore` recognizes exactly two certificate base paths, both *de facto* in Linux:
+`libcertstore` recognizes exactly two certificate base paths, both de facto standards in Linux:
 
 | Path | Primary use |
 |------|-------------|
@@ -179,8 +179,8 @@ certctl add --cn ldap.example.com --renew-before 1d
 
 Each registration creates:
 
-- `/etc/systemd/system/certstore-renew-<cn>.timer`
-- `/etc/systemd/system/certstore-renew-<cn>.service`
+- `/etc/systemd/system/certstore/certstore-renew-<cn>.timer`
+- `/etc/systemd/system/certstore/certstore-renew-<cn>.service`
 
 The timer fires once at the renewal date. If renewal fails, it retries with exponential backoff -- it does not attempt renewal every day for the entire window. The previous cert remains active until the new one is in place. Renewal takes under 10 minutes.
 
