@@ -184,7 +184,7 @@ Each registration creates:
 
 The timer fires once at the renewal date. If renewal fails, it retries with exponential backoff -- it does not attempt renewal every day for the entire window. The previous cert remains active until the new one is in place. Renewal takes under 10 minutes.
 
-Renewal hooks fire after successful renewal and can restart services, reload configs or run arbitrary scripts.
+Renewal hooks fire after successful renewal and can restart or reload the services that depend on the certificate.
 
 > **Note:** Setting `--renew-before 1d` is supported but not recommended for production. If renewal fails for any reason, you have one day to fix it before the cert expires.
 
