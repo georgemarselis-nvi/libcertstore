@@ -120,6 +120,9 @@ The base path is configurable via `/etc/certstore/certstore.conf` or `$CERTSTORE
 # List all tracked certificates
 certctl list
 
+# List a specific certificate by CN
+certctl list ldap.example.com
+
 # List CA certificates only
 certctl list --ca
 
@@ -139,27 +142,27 @@ certctl status
 # Check revocation status via OCSP or CRL
 certctl status --check-revocation
 
-# Manually trigger renewal for a certificate
-certctl renew --cn ldap.example.com
+# Show status, expiry and registered consumers for a specific certificate
+certctl list ldap.example.com
+
+# Manually trigger renewal for a certificate -- see Renewal section for full details
+certctl renew ldap.example.com
 
 # Register post-renewal restart hooks and label the consumers
 certctl notify --cn ldap.example.com --restart slapd,nginx,postgresql --description "LDAP Directory Service"
 
-# Show status, expiry and registered consumers for a certificate
-certctl status --cn ldap.example.com
-
 # Remove a certificate from the local store only
-certctl remove --cn ldap.example.com
+certctl remove ldap.example.com
 
 # Purge all expired certificates from the store
 certctl remove --purge-expired
 
 # Rotate key pair and request a fresh certificate from the CA
 # Old key and cert are tombstoned
-certctl rotate --cn ldap.example.com
+certctl rotate ldap.example.com
 
 # Revoke a certificate with the issuing CA and remove it from the local store
-certctl revoke --cn ldap.example.com
+certctl revoke ldap.example.com
 ```
 
 ---
@@ -360,7 +363,7 @@ No cert store design survives a root compromise. The correct response is host re
 The store tracks which services are registered against each certificate. One cert can serve multiple services with no duplication of key material -- each service gets the path via `certstore_get()` and is listed as a consumer in the store metadata.
 
 ```bash
-certctl status --cn ldap.example.com
+certctl list ldap.example.com
 # cn:        ldap.example.com
 # expiry:    2026-09-27
 # status:    valid
