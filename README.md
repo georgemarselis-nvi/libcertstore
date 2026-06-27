@@ -38,12 +38,13 @@ libcertstore (Rust library)
 
 certctl (CLI - included)
     │
-    ├── certctl list
+    ├── certctl list [--ca] [--end-entity]
     ├── certctl add
     ├── certctl remove
     ├── certctl revoke
     ├── certctl renew
     ├── certctl status
+    ├── certctl scan
     └── certctl notify
 ```
 
@@ -115,6 +116,12 @@ The base path is configurable via `/etc/certstore/certstore.conf` or `$CERTSTORE
 ```bash
 # List all tracked certificates
 certctl list
+
+# List CA certificates only
+certctl list --ca
+
+# List end-entity certificates only
+certctl list --end-entity
 
 # Add an existing or pre-issued certificate to the store (including airgapped hosts via removable media)
 certctl add --cert /path/to/cert.pem --key /path/to/key.pem --chain /path/to/chain.pem
