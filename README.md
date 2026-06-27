@@ -148,9 +148,9 @@ certctl list ldap.example.com
 # Manually trigger renewal for a certificate -- see Renewal section for full details
 certctl renew ldap.example.com
 
-# Register post-renewal restart hooks and label the consumers
-# --description overrides the label; falls back to the systemd unit Description= field; falls back to service name
-certctl notify --cn ldap.example.com --restart slapd,nginx,postgresql --description "LDAP Directory Service"
+# Register post-renewal restart hooks
+# Label is pulled automatically from the systemd unit Description= field; --description overrides it
+certctl notify --cn ldap.example.com --restart slapd,nginx,postgresql
 
 # Remove a certificate from the local store only
 certctl remove ldap.example.com
@@ -247,7 +247,7 @@ This means a freshly provisioned host has a valid cert from first boot, with no 
 
 ---
 
-
+## For Package Maintainers and Service Authors
 
 Every package manager, every service and every distro currently ships its own certificate handling code. `dnf`, `apt`, language runtimes and individual services all reinvent the same wheel - fetching, installing and trusting certificates in subtly different ways.
 
@@ -263,7 +263,7 @@ No custom install scripts. No hardcoded paths. No reinventing renewal logic. The
 
 ---
 
-
+## Library and API
 
 `libcertstore` is designed to be consumed by other services, not just used from the command line.
 
@@ -274,7 +274,7 @@ No custom install scripts. No hardcoded paths. No reinventing renewal logic. The
 ```rust
 use libcertstore::Store;
 
-let store = Store::open()?;
+let store = Store::open_for("slapd")?;
 let cert = store.get("ldap.example.com")?;
 println!("{}", cert.path());
 ```
@@ -286,14 +286,11 @@ A C-compatible FFI layer is provided so any language with a C FFI can link again
 ```c
 #include <certstore.h>
 
-/* Open the full store (requires root or certstore group membership) */
-certstore_t *store = certstore_open();
-certstore_cert_t *cert = certstore_get(store, "ldap.example.com");
-printf("%s\n", certstore_cert_path(cert));
-
 /* Open a service-scoped view -- only returns certs the calling service is allowed to see */
 certstore_t *store = certstore_open_for("slapd");
 certstore_cert_t *cert = certstore_get(store, "ldap.example.com");
+printf("%s\n", certstore_cert_path(cert));
+certstore_close(store);
 ```
 
 Service-scoped access is enforced by the library using the caller's UID/GID and SELinux label. A service cannot enumerate or access certs it has not been granted access to.
@@ -311,7 +308,23 @@ Bindings for common languages and service managers are planned.
 
 ---
 
+## Certificate Consumers
 
+The store tracks which services are registered against each certificate. One cert can serve multiple services with no duplication of key material -- each service gets the path via `certstore_get()` and is listed as a consumer in the store metadata. The consumer label is pulled automatically from the systemd unit `Description=` field.
+
+```bash
+certctl list ldap.example.com
+# cn:        ldap.example.com
+# expiry:    2026-09-27
+# status:    valid
+# consumers: slapd (OpenLDAP standalone daemon), nginx (A high performance web server), postgresql (PostgreSQL RDBMS)
+```
+
+On renewal, all registered consumers are notified automatically. Compliance auditors get a full report of who uses each cert without requiring per-service certificate issuance.
+
+---
+
+## Security
 
 Certificates are public - tampering with them is not the primary threat. Private keys are. `libcertstore` secures keys through permissions, MAC policy and audit logging.
 
@@ -353,31 +366,13 @@ Tested HSM targets: SoftHSM2 (development), Nitrokey HSM 2, YubiHSM 2 and any PK
 
 ---
 
-
+### If Someone Has Root
 
 No cert store design survives a root compromise. The correct response is host recovery, not tamper detection. Audit logging exists to tell you *when* and *how* the compromise happened, not to prevent it.
 
 ---
 
-
-
-### Certificate Consumers
-
-The store tracks which services are registered against each certificate. One cert can serve multiple services with no duplication of key material -- each service gets the path via `certstore_get()` and is listed as a consumer in the store metadata.
-
-```bash
-certctl list ldap.example.com
-# cn:        ldap.example.com
-# expiry:    2026-09-27
-# status:    valid
-# consumers: slapd (LDAP Directory Service), nginx, postgresql
-```
-
-On renewal, all registered consumers are notified automatically. Compliance auditors get a full report of who uses each cert without requiring per-service certificate issuance.
-
----
-
-
+## Syslog and Event Integration
 
 `libcertstore` logs all operations to syslog with a dedicated identifier (`certstore`). Example message templates are shipped with the package so sysadmins can wire them into rsyslog, syslog-ng or a SIEM without reverse engineering log output.
 
@@ -397,7 +392,7 @@ rsyslog and syslog-ng filter examples are provided under `contrib/syslog/` in th
 
 ---
 
-
+## Building
 
 Requires Rust 1.75+.
 
