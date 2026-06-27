@@ -172,7 +172,40 @@ certctl add --cn ldap.example.com --ca internal --overlap 30d
 
 ---
 
-## For Package Maintainers and Service Authors
+## Provisioning Integration
+
+### Automatic Certificate Discovery
+
+`certctl scan` walks the system and finds existing certificates regardless of where they were placed -- by certbot, acme.sh, manual installation, or any other tool. Found certs are registered into the store without re-issuance. No assumption is made that a host needs a new cert; discovery comes first.
+
+```bash
+certctl scan
+certctl scan --path /etc/letsencrypt/live/
+```
+
+### Preseed and Kickstart Integration
+
+`libcertstore` provides hooks for Debian preseed and Red Hat Kickstart so a host certificate can be requested and installed during provisioning, before the system is fully up. The cert is requested from whatever CA backend is configured -- Let's Encrypt, an internal CA, or `certstored` on the network.
+
+Debian preseed example:
+
+```
+d-i preseed/late_command string certctl request --cn $(hostname --fqdn) --ca letsencrypt
+```
+
+Kickstart example:
+
+```
+%post
+certctl request --cn $(hostname --fqdn) --ca letsencrypt
+%end
+```
+
+This means a freshly provisioned host has a valid cert from first boot, with no manual steps.
+
+---
+
+
 
 Every package manager, every service, and every distro currently ships its own certificate handling code. `dnf`, `apt`, language runtimes, and individual services all reinvent the same wheel - fetching, installing, and trusting certificates in subtly different ways.
 
