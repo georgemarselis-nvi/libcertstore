@@ -84,7 +84,9 @@ certstored (daemon, optional - future)
 
 `/etc/pki/` is the preferred base. `/etc/ssl/` is supported but not preferred.
 
-No other paths (e.g. `/etc/letsencrypt/`, `~/.acme.sh/`) are natively recognized. If you use a CA tool that writes elsewhere, configure `libcertstore` with the foreign path and it will bind-mount it into `/etc/pki/certstore/` automatically. Bind mounts are used instead of symlinks to prevent accidental deletion or redirection.
+No other paths (e.g. `/etc/letsencrypt/`, `~/.acme.sh/`) are natively recognized. If you use a CA tool that writes elsewhere, configure `libcertstore` with the foreign path and it will bind-mount it into `/etc/pki/certstore/` automatically. Bind mounts are restricted to paths under `/etc/pki/` or `/etc/ssl/` only -- bind mounts from user directories are rejected outright.
+
+If `certctl scan` finds a certificate under a user directory, it validates it but refuses to import it automatically. A warning is logged with the full path and the admin is instructed to move it and run `certctl add` explicitly. No silent action is taken on user-owned paths.
 
 Default store layout:
 
