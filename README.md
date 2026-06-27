@@ -43,7 +43,7 @@ certctl (CLI - included)
     ├── certctl remove
     ├── certctl revoke
     ├── certctl renew
-    ├── certctl status
+    ├── certctl status [--check-revocation]
     ├── certctl scan
     └── certctl notify
 ```
@@ -60,6 +60,8 @@ certstored (daemon, optional - future)
     │       clients verify the signature before accepting - prevents MITM substitution
     ├── Validation: validates all certs in the store on startup and on import
     │       catches expired or corrupt certs before they cause service failures
+    ├── Real-time expiry tracking: marks certs invalid the moment they expire
+    │       store state is always authoritative -- no polling required
     ├── D-Bus API for local queries
     ├── Network certificate delivery (Kerberos, mTLS)
     ├── Pull model (default): clients request certs from the daemon
@@ -128,6 +130,9 @@ certctl add --cert /path/to/cert.pem --key /path/to/key.pem --chain /path/to/cha
 
 # Show status and expiry of all certs
 certctl status
+
+# Check revocation status via OCSP or CRL
+certctl status --check-revocation
 
 # Manually trigger renewal for a certificate
 certctl renew --cn ldap.example.com
