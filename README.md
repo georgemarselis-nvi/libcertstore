@@ -295,6 +295,7 @@ cargo install --path .
 | 0.4 | D-Bus API, `certstored` daemon |
 | 0.5 | Network certificate delivery, Kerberos 6 integration |
 | 1.0 | Stable API, multi-CA plugin registry, enterprise-ready |
+| 1.x | Subordinate CA support: `certstored` acts as an intermediate CA for a domain hierarchy, issuing certs for any host beneath it (e.g. `pgsql.db.example.com`) without contacting the upstream CA on every request. Requires a subordinate CA certificate from an enterprise CA (DigiCert, GlobalSign, Sectigo). Not supported by public CAs such as Let's Encrypt. |
 
 ---
 
