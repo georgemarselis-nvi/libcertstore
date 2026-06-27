@@ -1,6 +1,6 @@
 # libcertstore
 
-Unified local certificate store for Linux. Tracks, renews, and notifies services of certificate changes, regardless of CA or client tool.
+Unified local certificate store for Linux. Tracks, renews and notifies services of certificate changes, regardless of CA or client tool.
 
 Includes the `certctl` command-line tool. A network-capable daemon (`certstored`) is planned.
 
@@ -8,7 +8,7 @@ Includes the `certctl` command-line tool. A network-capable daemon (`certstored`
 
 ## Problem
 
-Linux has no standard location or API for service certificates. `certbot` uses `/etc/letsencrypt/`, `acme.sh` uses `~/.acme.sh/`, and every CA client does its own thing. Services must be manually pointed at cert paths, renewal hooks are per-tool, and there is no way to ask the system "what certificates are installed and when do they expire?"
+Linux has no standard location or API for service certificates. `certbot` uses `/etc/letsencrypt/`, `acme.sh` uses `~/.acme.sh/` and every CA client does its own thing. Services must be manually pointed at cert paths, renewal hooks are per-tool and there is no way to ask the system "what certificates are installed and when do they expire?"
 
 `libcertstore` fixes this.
 
@@ -18,11 +18,11 @@ Linux has no standard location or API for service certificates. `certbot` uses `
 
 - Single certificate registry for Linux, compliant with the Linux Filesystem Hierarchy Standard
 - CA-agnostic: works with Let's Encrypt, DigiCert, GlobalSign, Sectigo, ZeroSSL, Google Trust Services, AWS Private CA, internal CAs, self-signed, PKCS#12, anything with an ACME or REST API
-- Tool-agnostic: import certs from certbot, acme.sh, openssl, or manually
+- Tool-agnostic: import certs from certbot, acme.sh, openssl or manually
 - Automatic renewal via pluggable CA backends
 - Service notification on renewal (systemd, D-Bus, custom hooks)
 - No daemon required for local use
-- Future: `certstored` daemon for network delivery, multi-host environments, and enterprise CA integration
+- Future: `certstored` daemon for network delivery, multi-host environments and enterprise CA integration
 
 ---
 
@@ -57,6 +57,8 @@ certstored (daemon, optional - future)
     │       clients do not need to know or care which CA is used
     ├── Signed delivery: certstored signs all cert deliveries with its own key
     │       clients verify the signature before accepting - prevents MITM substitution
+    ├── Validation: validates all certs in the store on startup and on import
+    │       catches expired or corrupt certs before they cause service failures
     ├── D-Bus API for local queries
     ├── Network certificate delivery (Kerberos, mTLS)
     ├── Pull model (default): clients request certs from the daemon
@@ -74,7 +76,7 @@ certstored (daemon, optional - future)
 | Path | Primary use |
 |------|-------------|
 | `/etc/pki/` | Preferred. Red Hat convention, widely adopted. `libcertstore` advocates for FHS standardization of this path. |
-| `/etc/ssl/` | Supported. Debian, Ubuntu, and derivatives. |
+| `/etc/ssl/` | Supported. Debian, Ubuntu and derivatives. |
 
 `/etc/pki/` is the preferred base. `/etc/ssl/` is supported but not preferred.
 
@@ -114,7 +116,7 @@ The base path is configurable via `/etc/certstore/certstore.conf` or `$CERTSTORE
 # List all tracked certificates
 certctl list
 
-# Add an existing certificate to the store
+# Add an existing or pre-issued certificate to the store (including airgapped hosts via removable media)
 certctl add --cert /path/to/cert.pem --key /path/to/key.pem --chain /path/to/chain.pem
 
 # Show status and expiry of all certs
@@ -159,7 +161,7 @@ Each registration creates:
 
 The timer fires once at the renewal date. If renewal fails, it retries with exponential backoff -- it does not attempt renewal every day for the entire window. The previous cert remains active until the new one is in place. Renewal takes under 10 minutes.
 
-Renewal hooks fire after successful renewal and can restart services, reload configs, or run arbitrary scripts.
+Renewal hooks fire after successful renewal and can restart services, reload configs or run arbitrary scripts.
 
 > **Note:** Setting `--renew-before 1d` is supported but not recommended for production. If renewal fails for any reason, you have one day to fix it before the cert expires.
 
@@ -180,7 +182,7 @@ certctl add --cn ldap.example.com --ca internal --overlap 30d
 
 ### Automatic Certificate Discovery
 
-`certctl scan` walks the system and finds existing certificates regardless of where they were placed -- by certbot, acme.sh, manual installation, or any other tool. Found certs are registered into the store without re-issuance. No assumption is made that a host needs a new cert; discovery comes first.
+`certctl scan` walks the system and finds existing certificates regardless of where they were placed -- by certbot, acme.sh, manual installation or any other tool. Found certs are registered into the store without re-issuance. No assumption is made that a host needs a new cert; discovery comes first.
 
 ```bash
 certctl scan
@@ -189,7 +191,7 @@ certctl scan --path /etc/letsencrypt/live/
 
 ### Preseed and Kickstart Integration
 
-`libcertstore` provides hooks for Debian preseed and Red Hat Kickstart so a host certificate can be requested and installed during provisioning, before the system is fully up. The cert is requested from whatever CA backend is configured -- Let's Encrypt, an internal CA, or `certstored` on the network.
+`libcertstore` provides hooks for Debian preseed and Red Hat Kickstart so a host certificate can be requested and installed during provisioning, before the system is fully up. The cert is requested from whatever CA backend is configured -- Let's Encrypt, an internal CA or `certstored` on the network.
 
 Debian preseed example:
 
@@ -211,7 +213,7 @@ This means a freshly provisioned host has a valid cert from first boot, with no 
 
 
 
-Every package manager, every service, and every distro currently ships its own certificate handling code. `dnf`, `apt`, language runtimes, and individual services all reinvent the same wheel - fetching, installing, and trusting certificates in subtly different ways.
+Every package manager, every service and every distro currently ships its own certificate handling code. `dnf`, `apt`, language runtimes and individual services all reinvent the same wheel - fetching, installing and trusting certificates in subtly different ways.
 
 `libcertstore` is the answer to that. Instead of writing cert handling code in your package or service, call `libcertstore`. One integration, one store, one place to audit.
 
@@ -243,7 +245,7 @@ println!("{}", cert.path());
 
 ### C FFI
 
-A C-compatible FFI layer is provided so any language with a C FFI can link against `libcertstore` -- Python, Go, C, C++, and others.
+A C-compatible FFI layer is provided so any language with a C FFI can link against `libcertstore` -- Python, Go, C, C++ and others.
 
 ```c
 #include <certstore.h>
@@ -268,7 +270,7 @@ Bindings for common languages and service managers are planned.
 
 
 
-Certificates are public - tampering with them is not the primary threat. Private keys are. `libcertstore` secures keys through permissions, MAC policy, and audit logging.
+Certificates are public - tampering with them is not the primary threat. Private keys are. `libcertstore` secures keys through permissions, MAC policy and audit logging.
 
 ### File Permissions
 
@@ -284,19 +286,31 @@ Certificates are public - tampering with them is not the primary threat. Private
 auditctl -w /etc/pki/certstore/keys/ -p rwxa -k certstore_keys
 ```
 
-This logs every read, write, execute, and attribute change, tagged `certstore_keys`. Query with:
+This logs every read, write, execute and attribute change, tagged `certstore_keys`. Query with:
 
 ```bash
 ausearch -k certstore_keys
 ```
 
-You get: who, what process, what UID, what syscall, and what time. Forward to syslog or a SIEM for alerting.
+You get: who, what process, what UID, what syscall and what time. Forward to syslog or a SIEM for alerting.
 
 ### SELinux / AppArmor
 
 A reference SELinux policy is planned that restricts key access to `certctl` and explicitly allowlisted service executables (e.g. `slapd`, `httpd`). Everything else is denied and logged. On non-SELinux systems, an AppArmor profile will be provided.
 
-### If Someone Has Root
+### Hardware Security Module (HSM)
+
+For `certstored` operating as a subordinate CA, the signing key should never exist in software. `libcertstore` supports PKCS#11 so the subordinate CA signing key is generated on and never leaves the HSM. Cert signing requests are passed to the HSM; the signed cert is returned. The private key is not exportable.
+
+Enterprise CAs will require HSM key storage before issuing a subordinate CA certificate. This is the correct architecture regardless.
+
+For regular host certificates, HSM is not required.
+
+Tested HSM targets: SoftHSM2 (development), Nitrokey HSM 2, YubiHSM 2 and any PKCS#11-compliant device.
+
+---
+
+
 
 No cert store design survives a root compromise. The correct response is host recovery, not tamper detection. Audit logging exists to tell you *when* and *how* the compromise happened, not to prevent it.
 
@@ -331,6 +345,7 @@ cargo install --path .
 | 0.3 | ACME plugin (DNS-01 + HTTP-01), Let's Encrypt support |
 | 0.4 | D-Bus API, `certstored` daemon |
 | 0.5 | Network certificate delivery, Kerberos 6 integration |
+| 0.6 | CI/CD pipeline: GitHub Actions producing `.rpm` (Fedora/RHEL) and `.deb` (Debian/Ubuntu) packages on every release |
 | 1.0 | Stable API, multi-CA plugin registry, enterprise-ready |
 | 1.x | Subordinate CA support: `certstored` acts as an intermediate CA for a domain hierarchy, issuing certs for any host beneath it (e.g. `pgsql.db.example.com`) without contacting the upstream CA on every request. Requires a subordinate CA certificate from an enterprise CA (DigiCert, GlobalSign, Sectigo). Not supported by public CAs such as Let's Encrypt. |
 
@@ -349,7 +364,7 @@ cargo install --path .
 
 `libcertstore` is dual-licensed:
 
-- **Apache-2.0** (default) - for commercial use, proprietary integration, and open source projects that prefer liberal licensing. Includes explicit patent protection.
+- **Apache-2.0** (default) - for commercial use, proprietary integration and open source projects that prefer liberal licensing. Includes explicit patent protection.
 - **GPL-3.0** - for projects that require copyleft. Available on the `gpl` branch.
 
 Choose whichever license fits your use case. Contributions are accepted under both and ported to both.
