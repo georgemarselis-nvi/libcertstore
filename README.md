@@ -428,6 +428,8 @@ WantedBy=multi-user.target
 
 Add your cert-dependent services to the `Before=` line. `certstored` is not required -- this works on any systemd system.
 
+Non-systemd init systems (OpenRC, runit, s6) and BSD are not supported yet. Contributions welcome.
+
 ---
 
 ## Roadmap
@@ -470,5 +472,3 @@ Choose whichever license fits your use case. Contributions are accepted under bo
 ## Status
 
 Pre-alpha. Design phase. Contributions and RFC-style discussion welcome.
-
-Copyright (C) 2026 George Marselis
