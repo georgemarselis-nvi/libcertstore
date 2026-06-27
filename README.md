@@ -75,7 +75,7 @@ certstored (daemon, optional - future)
 
 ## Filesystem Policy
 
-`libcertstore` recognizes exactly two certificate base paths, both defined by the Linux FHS:
+`libcertstore` recognizes exactly two certificate base paths, both *de facto* in Linux:
 
 | Path | Primary use |
 |------|-------------|
