@@ -359,9 +359,18 @@ For `certstored` operating as a subordinate CA, the signing key should never exi
 
 Enterprise CAs will require HSM key storage before issuing a subordinate CA certificate. This is the correct architecture regardless.
 
-For regular host certificates, HSM is not required.
+For regular host certificates, HSM is not required. Software key storage is fully supported and is the default for end-entity certs.
 
-Tested HSM targets: SoftHSM2 (development), Nitrokey HSM 2, YubiHSM 2 and any PKCS#11-compliant device.
+Key storage backends, in order of preference:
+
+| Backend | Use case |
+|---------|----------|
+| HSM (YubiHSM 2, Nitrokey HSM 2, etc.) | Subordinate CA signing keys. Recommended for enterprise. |
+| TPM2 (via `tpm2-pkcs11`) | Host certs on servers and workstations with a TPM chip. Good default for orgs without a dedicated HSM. |
+| SoftHSM2 | Development and testing only. |
+| Software (filesystem) | Default for end-entity certs. Acceptable for most deployments. |
+
+All backends are accessed via PKCS#11 -- no special per-backend code in `libcertstore`.
 
 ---
 
