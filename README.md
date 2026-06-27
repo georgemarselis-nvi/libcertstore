@@ -130,7 +130,8 @@ certctl list --end-entity
 certctl list --expired
 
 # Add an existing or pre-issued certificate to the store (including airgapped hosts via removable media)
-certctl add --cert /path/to/cert.pem --key /path/to/key.pem --chain /path/to/chain.pem
+# Warns if the CN or SANs do not match the current hostname -- use --force to override
+certctl add --cert /path/to/cert.pem --key /path/to/key.pem --chain /path/to/chain.pem [--force]
 
 # Show status and expiry of all certs
 certctl status
