@@ -470,3 +470,5 @@ Choose whichever license fits your use case. Contributions are accepted under bo
 ## Status
 
 Pre-alpha. Design phase. Contributions and RFC-style discussion welcome.
+
+Copyright (C) 2026 George Marselis
