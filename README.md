@@ -141,9 +141,8 @@ certctl status --check-revocation
 # Manually trigger renewal for a certificate
 certctl renew --cn ldap.example.com
 
-# Register a post-renewal notification hook
-# Also registers the service as a consumer of the certificate
-certctl notify --cn ldap.example.com --exec "systemctl restart slapd" --description "LDAP Directory Service"
+# Register post-renewal restart hooks and label the consumers
+certctl notify --cn ldap.example.com --restart slapd,nginx,postgresql --description "LDAP Directory Service"
 
 # Show status, expiry and registered consumers for a certificate
 certctl status --cn ldap.example.com
