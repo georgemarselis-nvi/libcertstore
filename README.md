@@ -360,7 +360,7 @@ certstore[1234]: INFO  cert=ldap.example.com action=revoked ca=letsencrypt
 certstore[1234]: WARN  cert=ldap.example.com action=ocsp_revoked
 ```
 
-rsyslog and syslog-ng filter examples are provided under `contrib/syslog/` in the repository.
+rsyslog and syslog-ng filter examples are provided under `contrib/syslog/` in the repository. A Prometheus exporter exposing cert expiry, revocation status and store health metrics is provided under `contrib/prometheus/` for those who prefer metrics-based monitoring.
 
 ---
 
