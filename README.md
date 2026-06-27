@@ -41,6 +41,7 @@ certctl (CLI - included)
     ├── certctl list
     ├── certctl add
     ├── certctl remove
+    ├── certctl revoke
     ├── certctl renew
     ├── certctl status
     └── certctl notify
@@ -125,8 +126,11 @@ certctl renew --cn ldap.example.com
 # Register a post-renewal notification hook
 certctl notify --cn ldap.example.com --exec "systemctl restart slapd"
 
-# Remove a certificate from the store
+# Remove a certificate from the local store only
 certctl remove --cn ldap.example.com
+
+# Revoke a certificate with the issuing CA and remove it from the local store
+certctl revoke --cn ldap.example.com
 ```
 
 ---
