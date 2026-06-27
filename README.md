@@ -295,6 +295,8 @@ certstore_close(store);
 
 Service-scoped access is enforced by the library using the caller's UID/GID and SELinux label. A service cannot enumerate or access certs it has not been granted access to.
 
+Cross-service read access (e.g. a Prometheus exporter reading cert metadata for all services) is granted explicitly in `/etc/certstore/certstore.conf` and enforced by SELinux policy. Config grants without a matching SELinux policy are not sufficient -- both must agree. All grants are logged.
+
 ### IPC / Socket API (with certstored)
 
 When `certstored` is running, services can query it over a local Unix socket without linking against the library at all. The protocol is simple and language-agnostic.
