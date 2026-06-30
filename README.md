@@ -353,6 +353,10 @@ Both backends solve lifecycle the same way: revocation and rotation happen once 
 
 It does not ship or manage the root CA bundles that browsers ship with by default (Mozilla's, Google's). Those remain the browser vendor's responsibility. If a vendor's root program ever wanted to source from `libcertstore`, that is no different from any other bulk import -- `certctl add` per root, nothing architecturally special.
 
+The line is simple: `certctl list` is the single command that shows every certificate the user or the system actually cares about -- anything IT made the user install, anything a service depends on, anything the user generated themselves. A vendor's own bundled trust list shipped inside their app (Chrome's root CAs, Firefox's root program) is invisible plumbing the app manages for itself and is not the store's concern, as long as the app does not force the user onto its own bundle for certs that should have come from the store in the first place.
+
+This is the day-to-day sysadmin case the store is meant to fix. When some app's documentation says "install this CA cert to make the warning go away" (a VPN client's CA, an internal service's self-signed root, whatever), that cert goes into `libcertstore` via `certctl add` instead of wherever the app's instructions told you to drop it. Six months later, `certctl list` shows it, with what it is and who depends on it -- no need to dig through that app's config file to remember where it ended up or whether it's still in date.
+
 ---
 
 ## Security
