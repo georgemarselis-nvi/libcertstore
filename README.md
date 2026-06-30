@@ -524,7 +524,7 @@ This closes the loop with two things already in this design:
 
 End to end: store rotates the key, LDAP serves the new pubkey to every server, the client's `ssh-agent` gets the new identity through the PKCS#11 module. No file copied by hand at any point in the chain.
 
-Not yet scoped into a roadmap milestone. Noted here as a direction worth pursuing once the PKCS#11 module (0.8) exists.
+Not yet scoped into a roadmap milestone. Noted here as a direction worth pursuing once the PKCS#11 module (1.x, post-1.0) exists.
 
 ---
 
@@ -539,9 +539,9 @@ Not yet scoped into a roadmap milestone. Noted here as a direction worth pursuin
 | 0.5 | Network certificate delivery, Kerberos 6 integration |
 | 0.6 | CI/CD pipeline: GitHub Actions producing `.rpm` (Fedora/RHEL) and `.deb` (Debian/Ubuntu) packages on every release |
 | 0.7 | Package manager integration: `apt` post-invoke hook and `dnf` plugin that automatically register certs dropped by installed packages into `libcertstore` |
-| 0.8 | PKCS#11 module for desktop client integration (Firefox/NSS, OpenVPN, ssh-agent); `certctl watch` for non-PKCS#11 clients |
-| 1.0 | Stable API, multi-CA plugin registry, enterprise-ready |
+| 1.0 | Stable API, multi-CA plugin registry, enterprise-ready. Server-side store is the primary deliverable through 1.0 -- desktop/client integration is deliberately deferred (see below). |
 | 1.x | Subordinate CA support: `certstored` acts as an intermediate CA for a domain hierarchy, issuing certs for any host beneath it (e.g. `pgsql.db.example.com`) without contacting the upstream CA on every request. Requires a subordinate CA certificate from an enterprise CA (DigiCert, GlobalSign, Sectigo). Not supported by public CAs such as Let's Encrypt. |
+| 1.x | PKCS#11 module for desktop client integration (Firefox/NSS, OpenVPN, ssh-agent); `certctl watch` for non-PKCS#11 clients. Secondary to server-side certs: lower urgency, larger surface area (FUSE, per-app SELinux policy), addressed once the core store is stable. |
 | 2.x | TUI and GUI frontends. Last priority -- the library, CLI and daemon are the product. |
 
 ---
