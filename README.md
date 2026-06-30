@@ -166,6 +166,10 @@ certctl rotate ldap.example.com
 
 # Revoke a certificate with the issuing CA and remove it from the local store
 certctl revoke ldap.example.com
+
+# Watch a path and render the store's contents into whatever format the
+# consuming app expects (NSS db, PEM, PKCS#12) -- see "Non-PKCS#11 Clients" below
+certctl watch ~/.mozilla/firefox/PROFILE/cert9.db --format nss --cn ldap.example.com
 ```
 
 ---
@@ -323,6 +327,32 @@ On renewal, all registered consumers are notified automatically. Compliance audi
 
 ---
 
+## Scope: Server and Client Certificates
+
+`libcertstore` is not limited to server-side service certificates. The same store, the same lifecycle, and the same audit trail apply to certificates a desktop or laptop needs as a client: VPN client certs, mTLS client auth certs, and organizationally-issued trust anchors a user is told to install by hand (an internal CA root, a vendor CA like FortiVPN's, etc.).
+
+These do not get a separate flat directory under the user's home (e.g. `~/.certstore/`). A user-owned, world-readable-to-the-user PEM directory defeats the access control model: the user is both the owner and every consuming app, so per-app scoping has no boundary to enforce against. Instead, all certificates, server and client, organizational and user-issued, live in the one canonical store, and consuming apps authenticate to the store at runtime rather than holding a standing local copy.
+
+`libcertstore` itself never patches or modifies a third-party application (Firefox, Chrome, OpenVPN). It is not their job to trust the store, and it is not `libcertstore`'s job to reach into their internals. Instead it presents two integration paths, and which one applies depends entirely on what the consuming app already supports.
+
+### PKCS#11-Aware Clients
+
+Apps that already support PKCS#11 (Firefox/NSS, OpenVPN's `--pkcs11-*` options, `ssh-agent` via a PKCS#11 provider) are pointed at a `libcertstore`-backed PKCS#11 module -- a `.so` registered the same way a hardware token (e.g. a YubiKey) would be. The app calls standard PKCS#11 functions (`C_FindObjectsInit`, `C_GetAttributeValue`, `C_Sign`) expecting a token; the module intercepts those calls, authenticates the caller against `libcertstore` (UID/GID and SELinux context, same enforcement as `certstore_open_for()`), and returns the matching certs and trust objects live. Nothing is written to disk. Trust anchors (an internal CA, FortiVPN's CA) are served as PKCS#11 trust objects the same way, replacing the `certutil -A` / `update-ca-certificates` ritual with a single store-managed object.
+
+This is the preferred path: zero code change required from the consuming app, and the store's access control model carries through intact.
+
+### Non-PKCS#11 Clients
+
+Apps that only know how to read a file at a fixed path (most things expecting `cert9.db`, a PEM, or a PKCS#12 file) are served through `certctl watch`. This registers a path and a target format; `libcertstore` renders the store's contents into that format on demand, either via a watched path rewritten on rotation, or via a FUSE mount where the open() call itself triggers the render. Both are implementation details under the one `certctl watch` interface.
+
+This path is strictly weaker on access control than the PKCS#11 module: a rendered file sitting at a path is consumable by anything with filesystem access to that path, same as today. What it solves is lifecycle, not isolation -- revocation and rotation happen once in the store, and the rendered copy is never stale beyond the next open or rewrite, instead of someone manually re-running `certutil -A` on every machine.
+
+### What `libcertstore` Does Not Do
+
+It does not ship or manage the root CA bundles that browsers ship with by default (Mozilla's, Google's). Those remain the browser vendor's responsibility. If a vendor's root program ever wanted to source from `libcertstore`, that is no different from any other bulk import -- `certctl add` per root, nothing architecturally special.
+
+---
+
 ## Security
 
 Certificates are public - tampering with them is not the primary threat. Private keys are. `libcertstore` secures keys through permissions, MAC policy and audit logging.
@@ -352,6 +382,8 @@ You get: who, what process, what UID, what syscall and what time. Forward to sys
 ### SELinux / AppArmor
 
 A reference SELinux policy is planned that restricts key access to `certctl` and explicitly allowlisted service executables (e.g. `slapd`, `httpd`). Everything else is denied and logged. On non-SELinux systems, an AppArmor profile will be provided.
+
+For desktop client integration (see Scope section above), each consuming app is expected to run under its own SELinux domain (type enforcement) for scoped access to mean anything. A default unconfined desktop session provides no isolation between apps running as the same user; per-app policy is required to get real separation between, for example, a browser's PKCS#11 session and a VPN client's.
 
 ### Hardware Security Module (HSM)
 
@@ -450,8 +482,6 @@ If the filesystem itself is compromised or unrecoverable, the host is compromise
 
 ---
 
-
-
 `libcertstore` ships a systemd oneshot unit `certstore-init.service` that runs `certctl scan` at boot, before any services that depend on certificates start. No daemon required.
 
 ```ini
@@ -486,6 +516,7 @@ Non-systemd init systems (OpenRC, runit, s6) and BSD are not supported yet. Cont
 | 0.5 | Network certificate delivery, Kerberos 6 integration |
 | 0.6 | CI/CD pipeline: GitHub Actions producing `.rpm` (Fedora/RHEL) and `.deb` (Debian/Ubuntu) packages on every release |
 | 0.7 | Package manager integration: `apt` post-invoke hook and `dnf` plugin that automatically register certs dropped by installed packages into `libcertstore` |
+| 0.8 | PKCS#11 module for desktop client integration (Firefox/NSS, OpenVPN, ssh-agent); `certctl watch` for non-PKCS#11 clients |
 | 1.0 | Stable API, multi-CA plugin registry, enterprise-ready |
 | 1.x | Subordinate CA support: `certstored` acts as an intermediate CA for a domain hierarchy, issuing certs for any host beneath it (e.g. `pgsql.db.example.com`) without contacting the upstream CA on every request. Requires a subordinate CA certificate from an enterprise CA (DigiCert, GlobalSign, Sectigo). Not supported by public CAs such as Let's Encrypt. |
 | 2.x | TUI and GUI frontends. Last priority -- the library, CLI and daemon are the product. |
