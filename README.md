@@ -167,8 +167,8 @@ certctl rotate ldap.example.com
 # Revoke a certificate with the issuing CA and remove it from the local store
 certctl revoke ldap.example.com
 
-# Watch a path and render the store's contents into whatever format the
-# consuming app expects (NSS db, PEM, PKCS#12) -- see "Non-PKCS#11 Clients" below
+# Watch a path and repackage the store's existing cert/key into whatever
+# container format the consuming app expects -- see "Non-PKCS#11 Clients" below
 certctl watch ~/.mozilla/firefox/PROFILE/cert9.db --format nss --cn ldap.example.com
 ```
 
@@ -343,9 +343,11 @@ This is the preferred path: zero code change required from the consuming app, an
 
 ### Non-PKCS#11 Clients
 
-Apps that only know how to read a file at a fixed path (most things expecting `cert9.db`, a PEM, or a PKCS#12 file) are served through `certctl watch`. This registers a path and a target format; `libcertstore` renders the store's contents into that format on demand, either via a watched path rewritten on rotation, or via a FUSE mount where the open() call itself triggers the render. Both are implementation details under the one `certctl watch` interface.
+Apps that only know how to read a file at a fixed path (most things expecting `cert9.db`, a PEM, or a PKCS#12 file) are served through `certctl watch`. This registers a path and a target format; `libcertstore` repackages the existing cert, chain and key already in the store into that container format on demand -- no new key material or certificate is generated, the bytes are unchanged, only the container differs (NSS database insert, PKCS#12 bundling, or a plain PEM copy). This happens either via a watched path rewritten on rotation, or via a FUSE mount where the open() call itself triggers the conversion. Both are implementation details under the one `certctl watch` interface.
 
-This path is strictly weaker on access control than the PKCS#11 module: a rendered file sitting at a path is consumable by anything with filesystem access to that path, same as today. What it solves is lifecycle, not isolation -- revocation and rotation happen once in the store, and the rendered copy is never stale beyond the next open or rewrite, instead of someone manually re-running `certutil -A` on every machine.
+`certctl watch` has two backends with different access control properties. The watched-path backend writes a real file to a fixed location and rewrites it on rotation -- that file is then consumable by anything with filesystem access to that path, same as today, no improvement on isolation. The FUSE backend instead exposes a mountpoint: no file is written ahead of time, the open() call is intercepted live and access-checked at that moment (same UID/GID and SELinux enforcement as `certstore_open_for()`), and the converted bytes are returned only to a permitted caller. The FUSE backend carries the store's access control model through intact, same as the PKCS#11 module; the watched-path backend does not, and exists only for apps where even a FUSE mountpoint will not work.
+
+Both backends solve lifecycle the same way: revocation and rotation happen once in the store, and the served copy is never stale beyond the next open or rewrite, instead of someone manually re-running `certutil -A` on every machine. The difference is isolation, not freshness.
 
 ### What `libcertstore` Does Not Do
 
@@ -502,6 +504,23 @@ WantedBy=multi-user.target
 Add your cert-dependent services to the `Before=` line. `certstored` is not required -- this works on any systemd system.
 
 Non-systemd init systems (OpenRC, runit, s6) and BSD are not supported yet. Contributions welcome.
+
+---
+
+## Addendum: SSH Key Rotation (Possible Future Direction)
+
+SSH key rotation today is decentralized and manual: generate a new key, push the new pubkey to every `authorized_keys` file, wait for the old key to age out everywhere, hope nothing was missed. `libcertstore` plus the PKCS#11 module described above is a plausible fix.
+
+OpenSSH's `ssh-agent` already supports PKCS#11 natively (`ssh-add -s <module.so>`), the same mechanism used for hardware tokens like a YubiKey. A `libcertstore`-backed module is functionally identical from the agent's point of view, just backed by the store instead of a physical token.
+
+This closes the loop with two things already in this design:
+
+- `certctl rotate` rotates the key in the store. The agent picks up the new identity via the PKCS#11 module on next session, no manual key file replacement on the client.
+- The new public key propagates via the `sshPublicKey` attribute defined in the LDAP v4 schema (see `ldap4_design_document.md`), served to every server's `AuthorizedKeysCommand`.
+
+End to end: store rotates the key, LDAP serves the new pubkey to every server, the client's `ssh-agent` gets the new identity through the PKCS#11 module. No file copied by hand at any point in the chain.
+
+Not yet scoped into a roadmap milestone. Noted here as a direction worth pursuing once the PKCS#11 module (0.8) exists.
 
 ---
 
